@@ -1,19 +1,17 @@
 {
   "name": "raffle-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Simple Telegram raffle bot",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^16.4.7",
-    "telegraf": "^4.16.3"
+    "telegraf": "^4.16.3",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
