@@ -55,7 +55,7 @@ bot.on("callback_query", async (ctx) => {
         const userId = ctx.from.id;
 
         if (raffle.participants.includes(userId)) {
-            return ctx.answerCbQuery("✅ Вы уже участвуете!");
+            return ctx.answerCbQuery("🤌 Вы уже участвуете!");
         }
 
         const ok = await checkSubscriptions(ctx.telegram, userId, [
@@ -84,7 +84,7 @@ bot.on("callback_query", async (ctx) => {
         }
 
         const isIn = raffle.participants.includes(ctx.from.id);
-        const status = isIn ? "✅ Вы участвуете!" : "❌ Вы ещё не участвуете";
+        const status = isIn ? "👍 Вы участвуете!" : "❌ Вы ещё не участвуете";
 
         const now = Date.now();
         const remaining = raffle.endTime - now;

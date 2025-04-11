@@ -1,5 +1,5 @@
 const { Scenes, Markup } = require("telegraf");
-const { add } = require("../raffles");
+const { add, getAll } = require("../raffles");
 const { v4: uuidv4 } = require("uuid");
 
 // Сцена пошагового создания розыгрыша
@@ -8,46 +8,57 @@ const createRaffleScene = new Scenes.WizardScene(
 
     // Шаг 1: канал
     (ctx) => {
-        ctx.reply("📢 Укажи @юзернейм канала, где будет розыгрыш:");
-        ctx.wizard.state.data = {};
+        const channel = ctx.message.text.trim();
+        if (!/^@[\w\d_]{5,}$/.test(channel)) {
+            ctx.reply("❌ Неверный формат. Пример: @my_channel");
+            return;
+        }
+        ctx.wizard.state.data = { channel };
+        ctx.reply("🔗 Укажи @юзернеймы доп. каналов через запятую (или «-», если нет):");
         return ctx.wizard.next();
     },
 
     // Шаг 2: доп. каналы
     (ctx) => {
-        ctx.wizard.state.data.channel = ctx.message.text;
-        ctx.reply("🔗 Укажи @юзернеймы доп. каналов через запятую (или «-», если нет):");
+        const raw = ctx.message.text.trim();
+        if (raw !== "-" && !/^(@[\w\d_]+)(\s*,\s*@[\w\d_]+)*$/.test(raw)) {
+            ctx.reply("❌ Неверный формат. Пример: @one, @two, @three или - если нет доп. каналов");
+            return;
+        }
+        ctx.wizard.state.data.additionalChannels = raw === "-" ? [] : raw.split(",").map(s => s.trim());
+        ctx.reply("📝 Введи название розыгрыша:");
         return ctx.wizard.next();
     },
 
     // Шаг 3: название
     (ctx) => {
-        const text = ctx.message.text;
-        ctx.wizard.state.data.additionalChannels = text === "-" ? [] : text.split(",").map(s => s.trim());
-        ctx.reply("📝 Введи название розыгрыша:");
+        const title = ctx.message.text.trim();
+        if (title.length < 3) {
+            ctx.reply("❌ Название должно быть от 3 символов");
+            return;
+        }
+        ctx.wizard.state.data.title = title;
+        ctx.reply("✏️ Введи описание розыгрыша:");
         return ctx.wizard.next();
     },
 
     // Шаг 4: описание
     (ctx) => {
-        ctx.wizard.state.data.title = ctx.message.text;
-        ctx.reply("✏️ Введи описание розыгрыша:");
-        return ctx.wizard.next();
-    },
-
-    // Шаг 5: время до окончания (в минутах)
-    (ctx) => {
-        ctx.wizard.state.data.description = ctx.message.text;
+        const desc = ctx.message.text.trim();
+        if (desc.length < 5) {
+            ctx.reply("❌ Описание должно быть от 5 символов");
+            return;
+        }
+        ctx.wizard.state.data.description = desc;
         ctx.reply("⏳ Укажи время до окончания розыгрыша (например: 1д 2ч 30м):");
         return ctx.wizard.next();
     },
 
-    // Шаг 6: количество победителей
+    // Шаг 5: время
     (ctx) => {
-        const input = ctx.message.text.toLowerCase();
+        const input = ctx.message.text.toLowerCase().trim();
         const timeRegex = /(?:(\d+)\s*д)?\s*(?:(\d+)\s*ч)?\s*(?:(\d+)\s*м)?/;
         const match = input.match(timeRegex);
-
         if (!match) {
             ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м");
             return;
@@ -56,7 +67,6 @@ const createRaffleScene = new Scenes.WizardScene(
         const days = parseInt(match[1] || 0);
         const hours = parseInt(match[2] || 0);
         const minutes = parseInt(match[3] || 0);
-
         const totalMs = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
 
         if (totalMs <= 0) {
@@ -65,14 +75,18 @@ const createRaffleScene = new Scenes.WizardScene(
         }
 
         ctx.wizard.state.data.endTime = Date.now() + totalMs;
-
         ctx.reply("🏆 Сколько победителей?");
         return ctx.wizard.next();
     },
 
-    // Шаг 7: подтверждение
+    // Шаг 6: победители
     (ctx) => {
-        ctx.wizard.state.data.winnerCount = parseInt(ctx.message.text);
+        const num = parseInt(ctx.message.text.trim());
+        if (isNaN(num) || num <= 0 || num > 100) {
+            ctx.reply("❌ Укажи корректное число победителей (от 1 до 100)");
+            return;
+        }
+        ctx.wizard.state.data.winnerCount = num;
 
         const data = ctx.wizard.state.data;
         ctx.reply(
@@ -91,7 +105,7 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 8: подтверждение
+    // Шаг 7: подтверждение
     async (ctx) => {
         if (ctx.callbackQuery?.data === "confirm_raffle") {
             const d = ctx.wizard.state.data;
@@ -105,6 +119,15 @@ const createRaffleScene = new Scenes.WizardScene(
             }
 
             const raffleId = uuidv4(); // 👈 Сначала создаём ID
+
+            let memberCountStart = 0;
+
+            try {
+                memberCountStart = await ctx.telegram.getChatMembersCount(channel);
+                console.log("👥 Подписчиков в начале:", memberCountStart);
+            } catch (err) {
+                console.warn("⚠️ Не удалось получить подписчиков:", err.message);
+            }
 
             try {
                 const message = await ctx.telegram.sendMessage(
@@ -134,6 +157,7 @@ const createRaffleScene = new Scenes.WizardScene(
                     winners: [],
                     winnerCount,
                     isFinished: false,
+                    memberCountStart,
                 });
 
                 await ctx.reply("✅ Розыгрыш создан и опубликован!");
