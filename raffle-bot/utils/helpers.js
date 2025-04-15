@@ -1,6 +1,3 @@
-const { addChannelStat } = require("./channelStats");
-const { notifyAdminAfterRaffle } = require("./notify");
-
 async function checkSubscriptions(telegram, userId, channels) {
     try {
         for (const channel of channels) {
@@ -27,47 +24,50 @@ async function finishRaffle(bot, raffle, updateFn) {
         const count = Math.min(Number(raffle.winnerCount), raffle.participants.length);
         winners = pickWinners(raffle.participants, count);
 
-        let messageText = `🎉 Розыгрыш завершён!\n\n*${raffle.title}*\n\n`;
+        // 1. Публичное сообщение в канал
+        const publicMessage =
+            `Розыгрыш завершён 💫  
+Спасибо всем, кто участвовал!
 
-        if (winners.length === 0) {
-            messageText += "😢 Нет победителей. Никто не участвовал.";
-        } else {
-            const mentions = winners.map(id => `🏆 [Победитель](tg://user?id=${id})`);
-            messageText += `🏆 Победители:\n${mentions.join("\n")}`;
-        }
+Победители уже определены, и мы скоро свяжемся с ними лично.  
+Если не повезло — не беда, впереди ещё много розыгрышей.`;
 
-        await bot.telegram.sendMessage(raffle.channelId, messageText, {
-            parse_mode: "Markdown"
-        });
+        await bot.telegram.sendMessage(raffle.channelId, publicMessage);
 
+        // 2. Обновление raffle
         updateFn(raffle.id, {
             winners,
             isFinished: true,
         });
 
-        // Получаем финальное число подписчиков
-        let memberCountEnd = 0;
+        // 3. Личное сообщение админу
+        const date = new Date(raffle.endTime).toLocaleDateString("ru-RU");
+        const postLink = `https://t.me/${raffle.channelName.replace("@", "")}/${raffle.messageId}`;
+        const mentions = winners.length > 0
+            ? winners.map(id => `• [Победитель](tg://user?id=${id})`).join("\n")
+            : "— Победителей нет";
+
+        const adminMessage =
+            `🎉 Розыгрыш: *${raffle.title}*  
+📅 Дата окончания: ${date}  
+📨 Пост: [Открыть](${postLink})
+
+🏆 Победители:  
+${mentions}`;
+
+        await bot.telegram.sendMessage(raffle.ownerId, adminMessage, {
+            parse_mode: "Markdown",
+            disable_web_page_preview: true,
+        });
+
+        // 4. Собираем финальное число подписчиков
         try {
-            memberCountEnd = await bot.telegram.getChatMembersCount(raffle.channelName);
-            console.log(memberCountEnd);
+            const memberCountEnd = await bot.telegram.getChatMembersCount(raffle.channelName);
+            console.log("📊 memberCountEnd:", memberCountEnd);
+            // (не сохраняем, если не используешь)
         } catch (err) {
             console.warn("⚠️ Не удалось получить memberCountEnd:", err.message);
         }
-
-        // Пишем в JSON статистику
-        addChannelStat(raffle.channelName, {
-            raffleId: raffle.id,
-            title: raffle.title,
-            start: raffle.memberCountStart || 0,
-            end: memberCountEnd,
-            after: null,
-            participants: raffle.participants.length,
-            winners,
-            startAt: raffle.startAt || Date.now(),
-            endAt: raffle.endTime || Date.now(),
-        });
-
-        await notifyAdminAfterRaffle(bot, raffle, winners, memberCountEnd);
 
     } catch (err) {
         console.error("❌ Ошибка при завершении розыгрыша:", err.message);

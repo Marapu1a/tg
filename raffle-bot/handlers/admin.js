@@ -1,24 +1,39 @@
 const { Scenes, Markup } = require("telegraf");
 const { add, getAll } = require("../raffles");
 const { v4: uuidv4 } = require("uuid");
+const { createRaffle } = require("../utils/raffleSchema");
 
-// Сцена пошагового создания розыгрыша
+// 1. Список заранее сохранённых file_id анимаций
+const gifs = [
+    'CgACAgQAAxkBAAIOmWf-IAozHUuGLzwXvizpBydfawntAAK1BAACKd5lUx6x-1tNgNGvNgQ',
+];
+
+// 2. Рандомный выбор
+const randomGifId = gifs[Math.floor(Math.random() * gifs.length)];
+
 const createRaffleScene = new Scenes.WizardScene(
     "createRaffleScene",
 
-    // Шаг 1: канал
+    // Шаг 1: спрашиваем канал
+    (ctx) => {
+        ctx.reply("📢 Укажи @юзернейм канала, где будет розыгрыш:");
+        ctx.wizard.state.data = {};
+        return ctx.wizard.next();
+    },
+
+    // Шаг 2: валидация канала + вопрос про доп. каналы
     (ctx) => {
         const channel = ctx.message.text.trim();
         if (!/^@[\w\d_]{5,}$/.test(channel)) {
             ctx.reply("❌ Неверный формат. Пример: @my_channel");
             return;
         }
-        ctx.wizard.state.data = { channel };
+        ctx.wizard.state.data.channel = channel;
         ctx.reply("🔗 Укажи @юзернеймы доп. каналов через запятую (или «-», если нет):");
         return ctx.wizard.next();
     },
 
-    // Шаг 2: доп. каналы
+    // Шаг 3: валидация доп. каналов + вопрос про название
     (ctx) => {
         const raw = ctx.message.text.trim();
         if (raw !== "-" && !/^(@[\w\d_]+)(\s*,\s*@[\w\d_]+)*$/.test(raw)) {
@@ -30,7 +45,7 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 3: название
+    // Шаг 4: валидация названия + вопрос про описание
     (ctx) => {
         const title = ctx.message.text.trim();
         if (title.length < 3) {
@@ -42,7 +57,7 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 4: описание
+    // Шаг 5: валидация описания + вопрос про время
     (ctx) => {
         const desc = ctx.message.text.trim();
         if (desc.length < 5) {
@@ -54,7 +69,7 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 5: время
+    // Шаг 6: валидация времени + вопрос про победителей
     (ctx) => {
         const input = ctx.message.text.toLowerCase().trim();
         const timeRegex = /(?:(\d+)\s*д)?\s*(?:(\d+)\s*ч)?\s*(?:(\d+)\s*м)?/;
@@ -79,7 +94,7 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 6: победители
+    // Шаг 7: валидация победителей + подтверждение
     (ctx) => {
         const num = parseInt(ctx.message.text.trim());
         if (isNaN(num) || num <= 0 || num > 100) {
@@ -105,21 +120,19 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 7: подтверждение
+    // Шаг 8: подтверждение
     async (ctx) => {
         if (ctx.callbackQuery?.data === "confirm_raffle") {
             const d = ctx.wizard.state.data;
             const { channel, additionalChannels, title, description, endTime, winnerCount } = d;
 
-            // 💥 Проверка на уже активный розыгрыш в этом канале
             const active = getAll().find(r => !r.isFinished && r.channelName === channel);
             if (active) {
                 await ctx.reply("❌ В этом канале уже идёт розыгрыш. Заверши его, прежде чем запускать новый.");
                 return ctx.scene.leave();
             }
 
-            const raffleId = uuidv4(); // 👈 Сначала создаём ID
-
+            const raffleId = uuidv4();
             let memberCountStart = 0;
 
             try {
@@ -130,21 +143,28 @@ const createRaffleScene = new Scenes.WizardScene(
             }
 
             try {
-                const message = await ctx.telegram.sendMessage(
-                    channel,
-                    `🎁 *${title}*\n\n${description}\n\n🕒 До: *${new Date(endTime).toLocaleString()}*\n👥 Победителей: *${winnerCount}*`,
-                    {
-                        parse_mode: "Markdown",
-                        reply_markup: {
-                            inline_keyboard: [[
+                const caption =
+                    `🎉 *${title}*\n\n` +
+                    `${description}\n\n` +
+                    `⏳ До: *${new Date(endTime).toLocaleString()}*\n` +
+                    `🏆 Победителей: *${winnerCount}*`;
+
+                const message = await ctx.telegram.sendAnimation(channel, randomGifId, {
+                    caption,
+                    parse_mode: "Markdown",
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
                                 { text: "🎉 Участвовать", callback_data: `join_${raffleId}` },
                                 { text: "📋 Статус", callback_data: `status_${raffleId}` }
-                            ]]
-                        }
+                            ]
+                        ]
                     }
-                );
+                });
 
-                add({
+                console.log(ctx.from.id);
+
+                add(createRaffle({
                     id: raffleId,
                     channelId: message.chat.id,
                     channelName: channel,
@@ -152,13 +172,15 @@ const createRaffleScene = new Scenes.WizardScene(
                     title,
                     description,
                     messageId: message.message_id,
+                    startAt: Date.now(),
                     endTime,
                     participants: [],
                     winners: [],
                     winnerCount,
                     isFinished: false,
                     memberCountStart,
-                });
+                    ownerId: ctx.from.id,
+                }));
 
                 await ctx.reply("✅ Розыгрыш создан и опубликован!");
             } catch (err) {

@@ -1,13 +1,14 @@
 [
   {
-    "id": "479797ae-b807-4524-81aa-5a70b0ba5f54",
+    "id": "3b31052f-50c3-44cc-b1d2-8c176ab5c385",
     "channelId": -1002476488937,
     "channelName": "@broke2bit",
     "additionalChannels": [],
-    "title": "sdfkljgdfl",
-    "description": "sldkfjsldk",
-    "messageId": 116,
-    "endTime": 1744386925276,
+    "title": "dsfsfsdf",
+    "description": "sdfsdfsdf",
+    "messageId": 309,
+    "startAt": 1744698399395,
+    "endTime": 1744698456832,
     "participants": [
       1958826421
     ],
@@ -16,127 +17,38 @@
     ],
     "winnerCount": 1,
     "isFinished": true,
-    "memberCountStart": 3
+    "memberCountStart": 3,
+    "ownerId": 1958826421
   },
   {
-    "id": "6cf32d38-9edb-4e9d-a74b-841ca4220ca6",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "dfdf",
-    "description": "asw",
-    "messageId": 118,
-    "endTime": 1744387577246,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 3
-  },
-  {
-    "id": "8b7c3b3c-ca49-4bcc-855b-826bd9677143",
+    "id": "36dd4528-2fdd-4698-8f36-7f9a05885e4f",
     "channelId": -1002476488937,
     "channelName": "@broke2bit",
     "additionalChannels": [],
     "title": "123123",
-    "description": "2342342",
-    "messageId": 120,
-    "endTime": 1744388571336,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 3
-  },
-  {
-    "id": "c92d033a-0324-45e1-b9e3-2be7cb0f129e",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "sdfs",
-    "description": "sdfsdf",
-    "messageId": 122,
-    "endTime": 1744388915740,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 3
-  },
-  {
-    "id": "096e6303-2dfa-4333-b60d-31fa8158ab22",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "dfgdf",
-    "description": "dgdfg",
-    "messageId": 124,
-    "endTime": 1744389862010,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 3
-  },
-  {
-    "id": "06cf7535-046f-43eb-8e71-c1e11ad154d4",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "sd",
-    "description": "123",
-    "messageId": 126,
-    "endTime": 1744390285594,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 0
-  },
-  {
-    "id": "d19398c3-39c9-42a3-90ee-44b0c43d8f73",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "dfg",
-    "description": "dfdfgd",
-    "messageId": 128,
-    "endTime": 1744390775864,
+    "description": "12312312",
+    "messageId": 311,
+    "startAt": 1744707144480,
+    "endTime": 1744707201948,
     "participants": [],
     "winners": [],
     "winnerCount": 1,
     "isFinished": true,
-    "memberCountStart": 0
+    "memberCountStart": 3,
+    "ownerId": 1958826421
   },
   {
-    "id": "b211aae3-8862-4fdf-89dc-e0d14ff72639",
+    "id": "cfbea640-0c6c-4579-9112-d2a7dace9a21",
     "channelId": -1002476488937,
     "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "sdsdgdf",
-    "description": "dgdfg",
-    "messageId": 130,
-    "endTime": 1744391097750,
+    "additionalChannels": [
+      "@broke2bit2"
+    ],
+    "title": "dfs;lfl;sdkf",
+    "description": "qwieoqiweq sdfsdf",
+    "messageId": 313,
+    "startAt": 1744708293834,
+    "endTime": 1744708351120,
     "participants": [
       1958826421
     ],
@@ -145,63 +57,30 @@
     ],
     "winnerCount": 1,
     "isFinished": true,
-    "memberCountStart": 3
+    "memberCountStart": 3,
+    "ownerId": 1958826421
   },
   {
-    "id": "d8e011d9-e35f-4e30-b50f-cd8a39c0151b",
+    "id": "1d85b400-3629-44a0-86e0-57d38ca9ea04",
     "channelId": -1002476488937,
     "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "1231231",
-    "description": "123123",
-    "messageId": 132,
-    "endTime": 1744391488053,
+    "additionalChannels": [
+      "@broke2bit2"
+    ],
+    "title": "Final test!",
+    "description": "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.",
+    "messageId": 315,
+    "startAt": 1744720281778,
+    "endTime": 1744720397275,
     "participants": [
       1958826421
     ],
     "winners": [
       1958826421
     ],
-    "winnerCount": 1,
+    "winnerCount": 4,
     "isFinished": true,
-    "memberCountStart": 3
-  },
-  {
-    "id": "287cc852-a249-4b23-a7e5-31aed6c2d66c",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "123123",
-    "description": "123123",
-    "messageId": 134,
-    "endTime": 1744391913835,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 3
-  },
-  {
-    "id": "2fec199c-6161-4f1f-b821-5a3b5fefc5de",
-    "channelId": -1002476488937,
-    "channelName": "@broke2bit",
-    "additionalChannels": [],
-    "title": "1233",
-    "description": "sdfsdfsdf",
-    "messageId": 136,
-    "endTime": 1744392896048,
-    "participants": [
-      1958826421
-    ],
-    "winners": [
-      1958826421
-    ],
-    "winnerCount": 1,
-    "isFinished": true,
-    "memberCountStart": 3
+    "memberCountStart": 3,
+    "ownerId": 1958826421
   }
 ]

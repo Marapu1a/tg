@@ -1,4 +1,6 @@
 require("dotenv").config();
+const fs = require("fs");
+
 const { Telegraf, Scenes, session } = require("telegraf");
 const { createRaffleScene } = require("./handlers/admin");
 const { loadRaffles } = require("./raffles");
@@ -22,7 +24,7 @@ bot.command("start", (ctx) => {
     if (ctx.from.id.toString() === process.env.ADMIN_ID) {
         ctx.reply("👋 Привет, Админ!", {
             reply_markup: {
-                keyboard: [["🎯 Создать розыгрыш"]],
+                keyboard: [["🎯 Создать розыгрыш"], ["📊 Статистика"]],
                 resize_keyboard: true,
                 one_time_keyboard: false,
             },
@@ -38,6 +40,52 @@ bot.hears("🎯 Создать розыгрыш", (ctx) => {
     } else {
         ctx.reply("⛔️ Доступ запрещён.");
     }
+});
+
+bot.hears("📊 Статистика", async (ctx) => {
+    const userId = ctx.from.id;
+
+    const raffles = JSON.parse(fs.readFileSync("storage/raffles.json", "utf-8"));
+
+    const userRaffles = raffles
+        .filter(r => r.ownerId === userId && r.isFinished)
+        .slice(-5)
+        .reverse();
+
+    if (userRaffles.length === 0) {
+        return ctx.reply("У тебя пока нет завершённых розыгрышей.");
+    }
+
+    const message = userRaffles.map(r => {
+        const date = new Date(r.endTime).toLocaleDateString("ru-RU");
+        const postLink = `https://t.me/${r.channelName.replace("@", "")}/${r.messageId}`;
+        const winners = r.winners.length > 0
+            ? r.winners.map(id => `• [Победитель](tg://user?id=${id})`).join("\n")
+            : "— Победителей нет";
+
+        return (
+            `🎉 *${r.title}*\n` +
+            `📅 ${date}\n` +
+            `🔗 [Смотреть пост](${postLink})\n\n` +
+            `👥 Участников: ${r.participants.length}\n` +
+            `🏆 Победители:\n${winners}\n\n` +
+            `──────────────`
+        );
+    }).join("\n\n");
+
+    await ctx.telegram.sendMessage(ctx.chat.id, message, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+    });
+});
+
+bot.on("animation", async (ctx) => {
+    if (ctx.from.id.toString() !== process.env.ADMIN_ID) {
+        return ctx.reply("⛔️ Не для тебя.");
+    }
+
+    const fileId = ctx.message.animation.file_id;
+    await ctx.reply(`🎬 file_id гифки:\n${fileId}`);
 });
 
 bot.on("callback_query", async (ctx) => {
