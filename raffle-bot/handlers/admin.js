@@ -2,6 +2,7 @@ const { Scenes, Markup } = require("telegraf");
 const { add, getAll } = require("../raffles");
 const { v4: uuidv4 } = require("uuid");
 const { createRaffle } = require("../utils/raffleSchema");
+const { getUser, addBalance, deductBalance, hasEnoughBalance } = require("../utils/users");
 
 // 1. Список заранее сохранённых file_id анимаций
 const gifs = [
@@ -22,12 +23,25 @@ const createRaffleScene = new Scenes.WizardScene(
     },
 
     // Шаг 2: валидация канала + вопрос про доп. каналы
-    (ctx) => {
+    async (ctx) => {
         const channel = ctx.message.text.trim();
         if (!/^@[\w\d_]{5,}$/.test(channel)) {
             ctx.reply("❌ Неверный формат. Пример: @my_channel");
             return;
         }
+
+        try {
+            const chatMember = await ctx.telegram.getChatMember(channel, ctx.from.id);
+            if (!["creator", "administrator"].includes(chatMember.status)) {
+                await ctx.reply("⛔️ Ты не админ в этом канале. Укажи канал, где ты админ.");
+                return;
+            }
+        } catch (err) {
+            console.warn("❌ Ошибка проверки админа:", err.message);
+            await ctx.reply("❌ Не удалось проверить доступ. Убедись, что бот и ты — админы в этом канале.");
+            return;
+        }
+
         ctx.wizard.state.data.channel = channel;
         ctx.reply("🔗 Укажи @юзернеймы доп. каналов через запятую (или «-», если нет):");
         return ctx.wizard.next();
@@ -132,6 +146,13 @@ const createRaffleScene = new Scenes.WizardScene(
                 return ctx.scene.leave();
             }
 
+            // 💸 Проверка баланса
+            const RAFFLE_COST = 500;
+            if (!hasEnoughBalance(ctx.from.id, RAFFLE_COST)) {
+                await ctx.reply("⛔️ Недостаточно средств. Пополни баланс.");
+                return ctx.scene.leave();
+            }
+
             const raffleId = uuidv4();
             let memberCountStart = 0;
 
@@ -162,7 +183,9 @@ const createRaffleScene = new Scenes.WizardScene(
                     }
                 });
 
-                console.log(ctx.from.id);
+                // 💸 Списание после успешной публикации
+                deductBalance(ctx.from.id, RAFFLE_COST);
+                const user = getUser(ctx.from.id);
 
                 add(createRaffle({
                     id: raffleId,
@@ -182,13 +205,11 @@ const createRaffleScene = new Scenes.WizardScene(
                     ownerId: ctx.from.id,
                 }));
 
-                await ctx.reply("✅ Розыгрыш создан и опубликован!");
+                await ctx.reply(`✅ Розыгрыш создан и опубликован!\n💸 Списано 500₽. Баланс: ${user.balance}₽`);
             } catch (err) {
                 console.error("❌ Ошибка при публикации:", err);
                 await ctx.reply("❌ Не удалось отправить пост. Убедись, что бот — админ в канале.");
             }
-        } else {
-            await ctx.reply("❌ Отмена. Начни заново, если хочешь.");
         }
         return ctx.scene.leave();
     }

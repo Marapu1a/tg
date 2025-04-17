@@ -34,6 +34,21 @@ async function finishRaffle(bot, raffle, updateFn) {
 
         await bot.telegram.sendMessage(raffle.channelId, publicMessage);
 
+        try {
+            await bot.telegram.editMessageReplyMarkup(
+                raffle.channelId,
+                raffle.messageId,
+                undefined,
+                {
+                    inline_keyboard: [
+                        [{ text: "📋 Розыгрыш завершён", callback_data: `status_${raffle.id}` }]
+                    ]
+                }
+            );
+        } catch (e) {
+            console.warn("⚠️ Не удалось обновить кнопки после завершения:", e.message);
+        }
+
         // 2. Обновление raffle
         updateFn(raffle.id, {
             winners,
@@ -52,7 +67,7 @@ async function finishRaffle(bot, raffle, updateFn) {
 📅 Дата окончания: ${date}  
 📨 Пост: [Открыть](${postLink})
 
-🏆 Победители:  
+🏆 Победители:\n  
 ${mentions}`;
 
         await bot.telegram.sendMessage(raffle.ownerId, adminMessage, {

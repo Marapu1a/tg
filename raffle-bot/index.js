@@ -2,11 +2,16 @@ require("dotenv").config();
 const fs = require("fs");
 
 const { Telegraf, Scenes, session } = require("telegraf");
+
 const { createRaffleScene } = require("./handlers/admin");
+const { demoScene } = require("./handlers/demo");
+
 const { loadRaffles } = require("./raffles");
 const { getById, update, getAll } = require("./raffles");
+
 const { checkSubscriptions } = require("./utils/helpers");
 const { finishRaffle } = require("./utils/helpers");
+const { getUser, addBalance, deductBalance, hasEnoughBalance } = require("./utils/users");
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -14,32 +19,69 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 loadRaffles();
 
 // Сцены
-const stage = new Scenes.Stage([createRaffleScene]);
+const stage = new Scenes.Stage([createRaffleScene, demoScene]);
 
 bot.use(session());
 bot.use(stage.middleware());
 
 // Кнопка для админа: Создать розыгрыш
 bot.command("start", (ctx) => {
-    if (ctx.from.id.toString() === process.env.ADMIN_ID) {
-        ctx.reply("👋 Привет, Админ!", {
-            reply_markup: {
-                keyboard: [["🎯 Создать розыгрыш"], ["📊 Статистика"]],
-                resize_keyboard: true,
-                one_time_keyboard: false,
-            },
-        });
-    } else {
-        ctx.reply("🤖 Привет! А ты чего здесь?");
-    }
+    // Сначала — инфо-кнопка
+    ctx.reply("👋 Добро пожаловать!\n\nЧто дальше?", {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "📘 Как работает бот", callback_data: "how_it_works" },
+                { text: "🎮 Попробовать демо", callback_data: "start_demo" }],
+
+            ]
+        }
+    });
+
+    // Потом — обычная клавиатура
+    ctx.reply("Выбери действие:", {
+        reply_markup: {
+            keyboard: [["🎯 Создать розыгрыш"], ["📊 Статистика"], ["💸 Пополнить баланс"], ["💰 Баланс"]],
+            resize_keyboard: true,
+            one_time_keyboard: false,
+        }
+    });
+});
+
+bot.action("start_demo", (ctx) => {
+    ctx.answerCbQuery();
+    ctx.scene.enter("demoRaffleScene");
+});
+
+
+bot.action("how_it_works", async (ctx) => {
+    await ctx.answerCbQuery(); // закрыть крутилку
+    await ctx.reply(
+        `📘 *Как работает бот:*
+  
+  • Стоимость розыгрыша — *500₽*
+  • Бот должен быть *админом в канале*
+  • Ты должен быть *админом в этом канале*
+  • Участники регистрируются по кнопке
+  • Победители выбираются автоматически
+  • Отчёт приходит в личку
+  
+  Попробуй демо-режим — бесплатно!`,
+        { parse_mode: "Markdown" }
+    );
 });
 
 bot.hears("🎯 Создать розыгрыш", (ctx) => {
-    if (ctx.from.id.toString() === process.env.ADMIN_ID) {
-        ctx.scene.enter("createRaffleScene");
-    } else {
-        ctx.reply("⛔️ Доступ запрещён.");
+    const RAFFLE_COST = 500;
+    if (!hasEnoughBalance(ctx.from.id, RAFFLE_COST)) {
+        ctx.reply(
+            `⛔️ У тебя недостаточно средств для создания розыгрыша.\n` +
+            `💸 Стоимость — ${RAFFLE_COST}₽.\n` +
+            `Пополнить можно через кнопку “💸 Пополнить баланс”.`
+        );
+        return;
     }
+
+    ctx.scene.enter("createRaffleScene");
 });
 
 bot.hears("📊 Статистика", async (ctx) => {
@@ -79,11 +121,18 @@ bot.hears("📊 Статистика", async (ctx) => {
     });
 });
 
-bot.on("animation", async (ctx) => {
-    if (ctx.from.id.toString() !== process.env.ADMIN_ID) {
-        return ctx.reply("⛔️ Не для тебя.");
-    }
+bot.hears("💸 Пополнить баланс", async (ctx) => {
+    addBalance(ctx.from.id, 500);
+    const user = getUser(ctx.from.id);
+    ctx.reply(`✅ Баланс пополнен. Сейчас у тебя: ${user.balance}₽`);
+});
 
+bot.hears("💰 Баланс", (ctx) => {
+    const user = getUser(ctx.from.id);
+    ctx.reply(`💰 Текущий баланс: ${user.balance}₽`);
+});
+
+bot.on("animation", async (ctx) => {
     const fileId = ctx.message.animation.file_id;
     await ctx.reply(`🎬 file_id гифки:\n${fileId}`);
 });
@@ -98,6 +147,10 @@ bot.on("callback_query", async (ctx) => {
 
         if (!raffle) {
             return ctx.answerCbQuery("❌ Розыгрыш не найден", { show_alert: true });
+        }
+
+        if (raffle.isFinished) {
+            return ctx.answerCbQuery("❌ Розыгрыш уже завершён", { show_alert: true });
         }
 
         const userId = ctx.from.id;
@@ -129,6 +182,10 @@ bot.on("callback_query", async (ctx) => {
 
         if (!raffle) {
             return ctx.answerCbQuery("❌ Розыгрыш не найден", { show_alert: true });
+        }
+
+        if (raffle.isFinished) {
+            return ctx.answerCbQuery("✅ Розыгрыш завершён", { show_alert: true });
         }
 
         const isIn = raffle.participants.includes(ctx.from.id);
