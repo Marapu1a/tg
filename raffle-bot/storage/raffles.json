@@ -207,5 +207,124 @@
     "isFinished": true,
     "memberCountStart": 3,
     "ownerId": 1958826421
+  },
+  {
+    "id": "bf2c2078-3cc4-4df2-9b42-fa62907d3057",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "lds;kf;sldf",
+    "description": "sdfsdf",
+    "messageId": 333,
+    "startAt": 1744902087029,
+    "endTime": 1744902140170,
+    "participants": [
+      1958826421
+    ],
+    "winners": [
+      1958826421
+    ],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
+  },
+  {
+    "id": "3b63d45d-6ca5-438a-8fb8-444ab341ff64",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "sdlkfsdlkf",
+    "description": "sdlkfjslodf",
+    "messageId": 335,
+    "startAt": 1744975674438,
+    "endTime": 1744975729869,
+    "participants": [
+      1958826421
+    ],
+    "winners": [
+      1958826421
+    ],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
+  },
+  {
+    "id": "4dfc4af1-2b63-48ab-86b0-c4bfc86e8fdb",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "sdlkfsdklf",
+    "description": "sd;lkfs;dlf",
+    "messageId": 337,
+    "startAt": 1744975902715,
+    "endTime": 1744975957187,
+    "participants": [
+      1958826421,
+      5113799232
+    ],
+    "winners": [
+      1958826421
+    ],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
+  },
+  {
+    "id": "f0fa066d-b005-4a1e-a123-8fa818404528",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "sdsl;kdfsd",
+    "description": "sdlsdkfjsdlf",
+    "messageId": 339,
+    "startAt": 1744976118546,
+    "endTime": 1744976175567,
+    "participants": [],
+    "winners": [],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
+  },
+  {
+    "id": "8b8739d8-57ac-4549-9391-ee76731df190",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "slkdflksdf",
+    "description": "sd;ls;dlf",
+    "messageId": 341,
+    "startAt": 1744976689598,
+    "endTime": 1744976746492,
+    "participants": [],
+    "winners": [],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
+  },
+  {
+    "id": "24a1c93f-f7a1-4faf-921f-e0c44c04c505",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "123123123",
+    "description": "123123123",
+    "messageId": 343,
+    "startAt": 1744990611601,
+    "endTime": 1744990668439,
+    "participants": [
+      1958826421
+    ],
+    "winners": [
+      1958826421
+    ],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
   }
 ]

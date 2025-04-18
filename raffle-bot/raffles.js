@@ -9,6 +9,17 @@ function loadRaffles() {
     if (fs.existsSync(FILE_PATH)) {
         raffles = JSON.parse(fs.readFileSync(FILE_PATH, "utf8"));
     }
+    if (fs.existsSync(FILE_PATH)) {
+        try {
+            const raw = fs.readFileSync(FILE_PATH, "utf8");
+            raffles = JSON.parse(raw);
+        } catch (err) {
+            console.error("❌ Не удалось прочитать или распарсить raffles.json:", err);
+            // сбросить в пустой массив, чтобы бот не падал
+            raffles = [];
+            saveRaffles(); // перезапишем файл чистым массивом
+        }
+    }
 }
 
 // Сохранение в файл

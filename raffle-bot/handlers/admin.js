@@ -4,14 +4,6 @@ const { v4: uuidv4 } = require("uuid");
 const { createRaffle } = require("../utils/raffleSchema");
 const { getUser, addBalance, deductBalance, hasEnoughBalance } = require("../utils/users");
 
-// 1. Список заранее сохранённых file_id анимаций
-const gifs = [
-    'CgACAgQAAxkBAAIOmWf-IAozHUuGLzwXvizpBydfawntAAK1BAACKd5lUx6x-1tNgNGvNgQ',
-];
-
-// 2. Рандомный выбор
-const randomGifId = gifs[Math.floor(Math.random() * gifs.length)];
-
 const createRaffleScene = new Scenes.WizardScene(
     "createRaffleScene",
 
@@ -24,7 +16,13 @@ const createRaffleScene = new Scenes.WizardScene(
 
     // Шаг 2: валидация канала + вопрос про доп. каналы
     async (ctx) => {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
+
         const channel = ctx.message.text.trim();
+
         if (!/^@[\w\d_]{5,}$/.test(channel)) {
             ctx.reply("❌ Неверный формат. Пример: @my_channel");
             return;
@@ -49,7 +47,13 @@ const createRaffleScene = new Scenes.WizardScene(
 
     // Шаг 3: валидация доп. каналов + вопрос про название
     (ctx) => {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
+
         const raw = ctx.message.text.trim();
+
         if (raw !== "-" && !/^(@[\w\d_]+)(\s*,\s*@[\w\d_]+)*$/.test(raw)) {
             ctx.reply("❌ Неверный формат. Пример: @one, @two, @three или - если нет доп. каналов");
             return;
@@ -61,7 +65,12 @@ const createRaffleScene = new Scenes.WizardScene(
 
     // Шаг 4: валидация названия + вопрос про описание
     (ctx) => {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
         const title = ctx.message.text.trim();
+
         if (title.length < 3) {
             ctx.reply("❌ Название должно быть от 3 символов");
             return;
@@ -71,35 +80,83 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 5: валидация описания + вопрос про время
+    // Шаг 5: валидация описания + вопрос про медиа
     (ctx) => {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
+
         const desc = ctx.message.text.trim();
+
         if (desc.length < 5) {
             ctx.reply("❌ Описание должно быть от 5 символов");
             return;
         }
         ctx.wizard.state.data.description = desc;
-        ctx.reply("⏳ Укажи время до окончания розыгрыша (например: 1д 2ч 30м):");
+        ctx.reply("📎 Вставь `file_id` гифки, которую хочешь использовать в посте.\nЕсли хочешь без медиа — просто введи `-`.", {
+            parse_mode: "Markdown"
+        });
         return ctx.wizard.next();
     },
 
-    // Шаг 6: валидация времени + вопрос про победителей
+    // Шаг 6: обработка file_id + переход к вопросу про время
     (ctx) => {
-        const input = ctx.message.text.toLowerCase().trim();
-        const timeRegex = /(?:(\d+)\s*д)?\s*(?:(\d+)\s*ч)?\s*(?:(\d+)\s*м)?/;
-        const match = input.match(timeRegex);
-        if (!match) {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
+
+        const input = ctx.message.text.trim();
+
+        if (input === "-") {
+            ctx.wizard.state.data.media = null;
+            ctx.reply("⏳ Укажи время до окончания розыгрыша (например: 1д 2ч 30м):");
+            return ctx.wizard.next();
+        }
+
+        if (!/^[-_\w]{20,}$/.test(input)) {
+            ctx.reply("❌ Похоже, это не `file_id`. Попробуй ещё раз или введи `-`.");
+            return;
+        }
+
+        ctx.wizard.state.data.media = input;
+        ctx.reply("✅ Принято.\n⏳ Укажи время до окончания розыгрыша (например: 1д 2ч 30м):");
+        return ctx.wizard.next();
+    },
+
+    // Шаг 7: валидация времени + вопрос про победителей
+    (ctx) => {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
+
+        const input = ctx.message.text.trim();
+
+        if (!/^((\d+[дчм])\s?)+$/.test(input)) {
             ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м");
             return;
         }
 
-        const days = parseInt(match[1] || 0);
-        const hours = parseInt(match[2] || 0);
-        const minutes = parseInt(match[3] || 0);
-        const totalMs = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
+        let days = 0, hours = 0, minutes = 0;
+        const parts = input.split(/\s+/);
+        for (const part of parts) {
+            if (/^\d+д$/.test(part)) {
+                days = parseInt(part);
+            } else if (/^\d+ч$/.test(part)) {
+                hours = parseInt(part);
+            } else if (/^\d+м$/.test(part)) {
+                minutes = parseInt(part);
+            } else {
+                ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м");
+                return;
+            }
+        }
 
+        const totalMs = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
         if (totalMs <= 0) {
-            ctx.reply("❌ Время должно быть больше нуля. Пример: 1д 2ч 30м");
+            ctx.reply("❌ Время должно быть больше нуля.");
             return;
         }
 
@@ -108,9 +165,15 @@ const createRaffleScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
 
-    // Шаг 7: валидация победителей + подтверждение
+    // Шаг 8: валидация победителей + подтверждение
     (ctx) => {
+        if (!ctx.message || !ctx.message.text) {
+            ctx.reply("❌ Доступен только ввод текстом.");
+            return;
+        }
+
         const num = parseInt(ctx.message.text.trim());
+
         if (isNaN(num) || num <= 0 || num > 100) {
             ctx.reply("❌ Укажи корректное число победителей (от 1 до 100)");
             return;
@@ -128,15 +191,23 @@ const createRaffleScene = new Scenes.WizardScene(
             `Победителей: ${data.winnerCount}`,
             Markup.inlineKeyboard([
                 Markup.button.callback("✅ Всё верно", "confirm_raffle"),
-                Markup.button.callback("🔄 Изменить", "cancel_raffle")
+                Markup.button.callback("❌ Отменить", "cancel_raffle")
             ])
         );
         return ctx.wizard.next();
     },
 
-    // Шаг 8: подтверждение
+    // Шаг 9: подтверждение или отмена
     async (ctx) => {
-        if (ctx.callbackQuery?.data === "confirm_raffle") {
+        const action = ctx.callbackQuery?.data;
+        if (!action) return; // или ctx.reply("❌ Что-то пошло не так.");
+
+        if (action === "cancel_raffle") {
+            await ctx.reply("❌ Создание розыгрыша отменено.");
+            return ctx.scene.leave();
+        }
+
+        if (action === "confirm_raffle") {
             const d = ctx.wizard.state.data;
             const { channel, additionalChannels, title, description, endTime, winnerCount } = d;
 
@@ -170,18 +241,44 @@ const createRaffleScene = new Scenes.WizardScene(
                     `⏳ До: *${new Date(endTime).toLocaleString()}*\n` +
                     `🏆 Победителей: *${winnerCount}*`;
 
-                const message = await ctx.telegram.sendAnimation(channel, randomGifId, {
-                    caption,
-                    parse_mode: "Markdown",
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                { text: "🎉 Участвовать", callback_data: `join_${raffleId}` },
-                                { text: "📋 Статус", callback_data: `status_${raffleId}` }
-                            ]
+                let message;
+                const mediaId = d.media;
+
+                const keyboard = {
+                    inline_keyboard: [
+                        [
+                            { text: "🎉 Участвовать", callback_data: `join_${raffleId}` },
+                            { text: "📋 Статус", callback_data: `status_${raffleId}` }
                         ]
+                    ]
+                };
+
+                if (mediaId) {
+                    try {
+                        message = await ctx.telegram.sendAnimation(
+                            channel,
+                            mediaId,
+                            { caption, parse_mode: "Markdown", reply_markup: keyboard }
+                        );
+                    } catch (err) {
+                        console.error("❌ sendAnimation failed:", err);
+                        await ctx.reply("❌ Не удалось опубликовать розыгрыш с гифкой. Проверь права бота.");
+                        return ctx.scene.leave();
                     }
-                });
+                } else {
+                    try {
+                        message = await ctx.telegram.sendMessage(
+                            channel,
+                            caption,
+                            { parse_mode: "Markdown", reply_markup: keyboard }
+                        );
+                    } catch (err) {
+                        console.error("❌ sendMessage failed:", err);
+                        await ctx.reply("❌ Не удалось опубликовать розыгрыш текстом. Проверь права бота.");
+                        return ctx.scene.leave();
+                    }
+                }
+
 
                 // 💸 Списание после успешной публикации
                 deductBalance(ctx.from.id, RAFFLE_COST);

@@ -87,7 +87,14 @@ bot.hears("🎯 Создать розыгрыш", (ctx) => {
 bot.hears("📊 Статистика", async (ctx) => {
     const userId = ctx.from.id;
 
-    const raffles = JSON.parse(fs.readFileSync("storage/raffles.json", "utf-8"));
+    let raffles;
+    try {
+        const raw = fs.readFileSync("storage/raffles.json", "utf-8");
+        raffles = JSON.parse(raw);
+    } catch (err) {
+        console.error("❌ Ошибка при чтении статистики:", err);
+        return ctx.reply("❌ Не удалось загрузить статистику. Попробуй позже.");
+    }
 
     const userRaffles = raffles
         .filter(r => r.ownerId === userId && r.isFinished)
@@ -115,16 +122,28 @@ bot.hears("📊 Статистика", async (ctx) => {
         );
     }).join("\n\n");
 
-    await ctx.telegram.sendMessage(ctx.chat.id, message, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-    });
+    // — отправка статистики
+    try {
+        await ctx.telegram.sendMessage(
+            ctx.chat.id,
+            message,
+            { parse_mode: "Markdown", disable_web_page_preview: true }
+        );
+    } catch (err) {
+        console.error("❌ sendMessage (statistics) failed:", err);
+        return ctx.reply("⚠️ Не удалось загрузить статистику. Попробуй позже.");
+    }
+
 });
 
-bot.hears("💸 Пополнить баланс", async (ctx) => {
-    addBalance(ctx.from.id, 500);
-    const user = getUser(ctx.from.id);
-    ctx.reply(`✅ Баланс пополнен. Сейчас у тебя: ${user.balance}₽`);
+bot.hears("💸 Пополнить баланс", (ctx) => {
+    ctx.reply("⏳ Пополняем баланс...");
+
+    setTimeout(() => {
+        addBalance(ctx.from.id, 500);
+        const user = getUser(ctx.from.id);
+        ctx.reply(`✅ Баланс пополнен. Сейчас у тебя: ${user.balance}₽`);
+    }, 300); // или 100 — тестируй, сколько нужно для плавности
 });
 
 bot.hears("💰 Баланс", (ctx) => {
@@ -132,13 +151,14 @@ bot.hears("💰 Баланс", (ctx) => {
     ctx.reply(`💰 Текущий баланс: ${user.balance}₽`);
 });
 
-bot.on("animation", async (ctx) => {
-    const fileId = ctx.message.animation.file_id;
-    await ctx.reply(`🎬 file_id гифки:\n${fileId}`);
+bot.on(["animation"], async (ctx) => {
+    const fileId = ctx.message.animation?.file_id || ctx.message.sticker?.file_id;
+    await ctx.reply(`🆔 file_id:\n${fileId}`);
 });
 
 bot.on("callback_query", async (ctx) => {
-    const data = ctx.callbackQuery.data;
+    const data = ctx.callbackQuery?.data;
+    if (!data) return; // или ctx.reply("❌ Что-то пошло не так.");
 
     // Участие
     if (data.startsWith("join_")) {
