@@ -6,7 +6,7 @@ module.exports = (bot) => {
 
         let raffles;
         try {
-            const raw = fs.readFileSync("storage/raffles.json", "utf-8");
+            const raw = fs.readFileSync("raffle-bot/storage/raffles.json", "utf-8");
             raffles = JSON.parse(raw);
         } catch (err) {
             console.error("❌ Ошибка при чтении статистики:", err);

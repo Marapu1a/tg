@@ -1,0 +1,22 @@
+{
+  "name": "raffle-bot",
+  "version": "1.0.0",
+  "description": "Telegram raffle bot + FreeKassa webhook",
+  "type": "commonjs",
+  "main": "raffle-bot/index.js",
+  "scripts": {
+    "start": "node raffle-bot/index.js & node backend/index.js",
+    "dev": "concurrently \"nodemon raffle-bot/index.js\" \"nodemon backend/index.js\""
+  },
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "telegraf": "^4.16.3",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

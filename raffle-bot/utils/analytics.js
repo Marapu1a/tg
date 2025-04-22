@@ -1,5 +1,5 @@
 const fs = require("fs");
-const path = "storage/analytics.json";
+const path = "raffle-bot/storage/analytics.json";
 
 // Загружаем статистику
 function loadAnalytics() {

@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: raffle-app
+    env_file: .env
+    ports:
+      - "3000:3000"
+    restart: always

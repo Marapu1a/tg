@@ -6,19 +6,15 @@ let raffles = [];
 
 // Загрузка из файла
 function loadRaffles() {
-    if (fs.existsSync(FILE_PATH)) {
-        raffles = JSON.parse(fs.readFileSync(FILE_PATH, "utf8"));
-    }
-    if (fs.existsSync(FILE_PATH)) {
-        try {
-            const raw = fs.readFileSync(FILE_PATH, "utf8");
-            raffles = JSON.parse(raw);
-        } catch (err) {
-            console.error("❌ Не удалось прочитать или распарсить raffles.json:", err);
-            // сбросить в пустой массив, чтобы бот не падал
-            raffles = [];
-            saveRaffles(); // перезапишем файл чистым массивом
-        }
+    if (!fs.existsSync(FILE_PATH)) return;
+
+    try {
+        const raw = fs.readFileSync(FILE_PATH, "utf8");
+        raffles = JSON.parse(raw);
+    } catch (err) {
+        console.error("❌ Не удалось прочитать или распарсить raffles.json:", err);
+        raffles = [];
+        saveRaffles();
     }
 }
 
@@ -37,13 +33,13 @@ function getById(id) {
     return raffles.find(r => r.id === id);
 }
 
-// Добавить
+// Добавить новый розыгрыш
 function add(raffle) {
     raffles.push(raffle);
     saveRaffles();
 }
 
-// Обновить
+// Обновить существующий розыгрыш
 function update(id, newData) {
     const index = raffles.findIndex(r => r.id === id);
     if (index !== -1) {
@@ -52,7 +48,7 @@ function update(id, newData) {
     }
 }
 
-// Удалить
+// Удалить розыгрыш
 function remove(id) {
     raffles = raffles.filter(r => r.id !== id);
     saveRaffles();

@@ -1,5 +1,5 @@
 const fs = require("fs");
-const path = "storage/users.json";
+const path = "raffle-bot/storage/users.json";
 
 function loadUsers() {
     try {

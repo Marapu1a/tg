@@ -2,6 +2,7 @@ const { Scenes } = require("telegraf");
 const { v4: uuidv4 } = require("uuid");
 
 const abortIfCommand = require("../utils/abortIfCommand");
+const checkInterrupt = require("../utils/checkInterrupt");
 
 const demoScene = new Scenes.WizardScene(
     "demoRaffleScene",
@@ -9,6 +10,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 1: канал
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         ctx.reply("📣 Введи юзернейм канала для демо в формате @my_channel (только для визуала, пост уйдёт тебе в ЛС):");
         return ctx.wizard.next();
     },
@@ -16,6 +18,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 2: доп. каналы
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -35,6 +38,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 3: название
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -64,6 +68,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 4: описание
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -83,6 +88,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 5: описание + запрос media
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -104,6 +110,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 6: валидация media + запрос времени
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -129,6 +136,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 7: время
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -170,6 +178,7 @@ const demoScene = new Scenes.WizardScene(
     // Шаг 8: публикация демо
     async (ctx) => {
         if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
