@@ -1,25 +1,29 @@
-const { Scenes, Markup } = require("telegraf");
+const { Scenes } = require("telegraf");
 const { v4: uuidv4 } = require("uuid");
+
+const abortIfCommand = require("../utils/abortIfCommand");
 
 const demoScene = new Scenes.WizardScene(
     "demoRaffleScene",
 
     // Шаг 1: канал
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         ctx.reply("📣 Введи юзернейм канала для демо в формате @my_channel (только для визуала, пост уйдёт тебе в ЛС):");
         return ctx.wizard.next();
     },
 
     // Шаг 2: доп. каналы
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
         }
 
         const channel = ctx.message.text.trim();
-        if (!/^@[\w\d_]{5,}$/.test(channel)) {
-            ctx.reply("❌ Неверный формат. Пример: @my_channel");
+        if (!/^@[a-zA-Z0-9_]{5,32}$/.test(channel)) {
+            ctx.reply("❌ Неверный формат. Укажи канал в виде @название (латиница, цифры, подчёркивания).");
             return;
         }
 
@@ -30,27 +34,44 @@ const demoScene = new Scenes.WizardScene(
 
     // Шаг 3: название
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
         }
 
         const raw = ctx.message.text.trim();
-        ctx.wizard.state.data.additionalChannels = raw === "-" ? [] : raw.split(",").map(s => s.trim());
-        ctx.reply("🏷 Введи название розыгрыша:");
+
+        if (raw === "-") {
+            ctx.wizard.state.data.additionalChannels = [];
+            ctx.reply("📝 Введи название розыгрыша:");
+            return ctx.wizard.next();
+        }
+
+        const channels = raw.split(",").map(s => s.trim());
+        const invalid = channels.find(c => !/^@[a-zA-Z0-9_]{5,32}$/.test(c));
+
+        if (invalid) {
+            ctx.reply(`❌ Неверный канал: ${invalid}\nПример: @one, @two, @three или «-» если без каналов.`);
+            return;
+        }
+
+        ctx.wizard.state.data.additionalChannels = channels;
+        ctx.reply("📝 Введи название розыгрыша:");
         return ctx.wizard.next();
     },
 
     // Шаг 4: описание
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
         }
 
         const title = ctx.message.text.trim();
-        if (title.length < 3) {
-            ctx.reply("❌ Название должно быть от 3 символов");
+        if (title.length < 3 || title.length > 100) {
+            ctx.reply("❌ Название должно быть от 3 до 100 символов");
             return;
         }
 
@@ -61,14 +82,15 @@ const demoScene = new Scenes.WizardScene(
 
     // Шаг 5: описание + запрос media
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
         }
 
         const desc = ctx.message.text.trim();
-        if (desc.length < 5) {
-            ctx.reply("❌ Описание должно быть от 5 символов");
+        if (desc.length < 5 || desc.length > 500) {
+            ctx.reply("❌ Описание должно быть от 5 до 500 символов");
             return;
         }
 
@@ -81,6 +103,7 @@ const demoScene = new Scenes.WizardScene(
 
     // Шаг 6: валидация media + запрос времени
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -93,7 +116,7 @@ const demoScene = new Scenes.WizardScene(
             return ctx.wizard.next();
         }
 
-        if (!/^[-_\w]{20,}$/.test(input)) {
+        if (!/^[\w-]{20,}$/.test(input)) {
             ctx.reply("❌ Похоже, это не `код гифки`. Попробуй ещё раз или введи `-`.");
             return;
         }
@@ -105,6 +128,7 @@ const demoScene = new Scenes.WizardScene(
 
     // Шаг 7: время
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -113,7 +137,7 @@ const demoScene = new Scenes.WizardScene(
         const input = ctx.message.text.toLowerCase().trim();
 
         if (!/^((\d+[дчм])\s?)+$/.test(input)) {
-            ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м");
+            ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м (или 4ч 30м, а можно и 1м)");
             return;
         }
 
@@ -133,8 +157,8 @@ const demoScene = new Scenes.WizardScene(
         }
 
         const totalMs = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
-        if (totalMs <= 0) {
-            ctx.reply("❌ Время должно быть больше нуля.");
+        if (totalMs < 60000) {
+            ctx.reply("❌ Минимальное время — 1 минута.");
             return;
         }
 
@@ -145,6 +169,7 @@ const demoScene = new Scenes.WizardScene(
 
     // Шаг 8: публикация демо
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
         if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -157,7 +182,7 @@ const demoScene = new Scenes.WizardScene(
         }
 
         ctx.wizard.state.data.winnerCount = num;
-        const { channel, additionalChannels, title, description, endTime, winnerCount, media } = ctx.wizard.state.data;
+        const { title, description, endTime, winnerCount, media } = ctx.wizard.state.data;
         const raffleId = uuidv4();
 
         const caption =

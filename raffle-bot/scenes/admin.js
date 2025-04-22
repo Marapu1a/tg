@@ -1,14 +1,20 @@
 const { Scenes, Markup } = require("telegraf");
 const { add, getAll } = require("../raffles");
 const { v4: uuidv4 } = require("uuid");
+
 const { createRaffle } = require("../utils/raffleSchema");
+const abortIfCommand = require("../utils/abortIfCommand");
+const checkInterrupt = require("../utils/checkInterrupt");
+
 const { getUser, addBalance, deductBalance, hasEnoughBalance } = require("../utils/users");
 
 const createRaffleScene = new Scenes.WizardScene(
     "createRaffleScene",
 
     // Шаг 1: спрашиваем канал
-    (ctx) => {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         ctx.reply("📢 Укажи @юзернейм канала, где будет розыгрыш:");
         ctx.wizard.state.data = {};
         return ctx.wizard.next();
@@ -16,6 +22,8 @@ const createRaffleScene = new Scenes.WizardScene(
 
     // Шаг 2: валидация канала + вопрос про доп. каналы
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message || !ctx.message.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -23,8 +31,8 @@ const createRaffleScene = new Scenes.WizardScene(
 
         const channel = ctx.message.text.trim();
 
-        if (!/^@[\w\d_]{5,}$/.test(channel)) {
-            ctx.reply("❌ Неверный формат. Пример: @my_channel");
+        if (!/^@[a-zA-Z0-9_]{5,32}$/.test(channel)) {
+            ctx.reply("❌ Неверный формат. Укажи канал в виде @название (латиница, цифры, подчёркивания).");
             return;
         }
 
@@ -46,33 +54,47 @@ const createRaffleScene = new Scenes.WizardScene(
     },
 
     // Шаг 3: валидация доп. каналов + вопрос про название
-    (ctx) => {
-        if (!ctx.message || !ctx.message.text) {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
+        if (!ctx.message?.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
         }
 
         const raw = ctx.message.text.trim();
 
-        if (raw !== "-" && !/^(@[\w\d_]+)(\s*,\s*@[\w\d_]+)*$/.test(raw)) {
-            ctx.reply("❌ Неверный формат. Пример: @one, @two, @three или - если нет доп. каналов");
+        if (raw === "-") {
+            ctx.wizard.state.data.additionalChannels = [];
+            ctx.reply("📝 Введи название розыгрыша:");
+            return ctx.wizard.next();
+        }
+
+        const channels = raw.split(",").map(s => s.trim());
+        const invalid = channels.find(c => !/^@[a-zA-Z0-9_]{5,32}$/.test(c));
+
+        if (invalid) {
+            ctx.reply(`❌ Неверный канал: ${invalid}\nПример: @one, @two, @three или «-» если без каналов.`);
             return;
         }
-        ctx.wizard.state.data.additionalChannels = raw === "-" ? [] : raw.split(",").map(s => s.trim());
+
+        ctx.wizard.state.data.additionalChannels = channels;
         ctx.reply("📝 Введи название розыгрыша:");
         return ctx.wizard.next();
     },
 
     // Шаг 4: валидация названия + вопрос про описание
-    (ctx) => {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message || !ctx.message.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
         }
         const title = ctx.message.text.trim();
 
-        if (title.length < 3) {
-            ctx.reply("❌ Название должно быть от 3 символов");
+        if (title.length < 3 || title.length > 100) {
+            ctx.reply("❌ Название должно быть от 3 до 100 символов");
             return;
         }
         ctx.wizard.state.data.title = title;
@@ -81,7 +103,9 @@ const createRaffleScene = new Scenes.WizardScene(
     },
 
     // Шаг 5: валидация описания + вопрос про медиа
-    (ctx) => {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message || !ctx.message.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -89,8 +113,8 @@ const createRaffleScene = new Scenes.WizardScene(
 
         const desc = ctx.message.text.trim();
 
-        if (desc.length < 5) {
-            ctx.reply("❌ Описание должно быть от 5 символов");
+        if (desc.length < 5 || desc.length > 500) {
+            ctx.reply("❌ Описание должно быть от 5 до 500 символов");
             return;
         }
         ctx.wizard.state.data.description = desc;
@@ -101,7 +125,9 @@ const createRaffleScene = new Scenes.WizardScene(
     },
 
     // Шаг 6: обработка file_id + переход к вопросу про время
-    (ctx) => {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message || !ctx.message.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -115,7 +141,7 @@ const createRaffleScene = new Scenes.WizardScene(
             return ctx.wizard.next();
         }
 
-        if (!/^[-_\w]{20,}$/.test(input)) {
+        if (!/^[\w-]{20,}$/.test(input)) {
             ctx.reply("❌ Похоже, это не `код гифки`. Попробуй ещё раз или введи `-`.");
             return;
         }
@@ -126,7 +152,9 @@ const createRaffleScene = new Scenes.WizardScene(
     },
 
     // Шаг 7: валидация времени + вопрос про победителей
-    (ctx) => {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message || !ctx.message.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -135,7 +163,7 @@ const createRaffleScene = new Scenes.WizardScene(
         const input = ctx.message.text.trim();
 
         if (!/^((\d+[дчм])\s?)+$/.test(input)) {
-            ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м");
+            ctx.reply("❌ Неверный формат. Пример: 1д 2ч 30м (или 4ч 30м, а можно и 1м)");
             return;
         }
 
@@ -155,8 +183,8 @@ const createRaffleScene = new Scenes.WizardScene(
         }
 
         const totalMs = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
-        if (totalMs <= 0) {
-            ctx.reply("❌ Время должно быть больше нуля.");
+        if (totalMs < 60000) {
+            ctx.reply("❌ Минимальное время — 1 минута.");
             return;
         }
 
@@ -166,7 +194,9 @@ const createRaffleScene = new Scenes.WizardScene(
     },
 
     // Шаг 8: валидация победителей + подтверждение
-    (ctx) => {
+    async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         if (!ctx.message || !ctx.message.text) {
             ctx.reply("❌ Доступен только ввод текстом.");
             return;
@@ -199,6 +229,8 @@ const createRaffleScene = new Scenes.WizardScene(
 
     // Шаг 9: подтверждение или отмена
     async (ctx) => {
+        if (abortIfCommand(ctx)) return;
+        if (await checkInterrupt(ctx, ctx.telegram)) return;
         const action = ctx.callbackQuery?.data;
         if (!action) return; // или ctx.reply("❌ Что-то пошло не так.");
 

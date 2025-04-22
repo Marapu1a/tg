@@ -326,5 +326,26 @@
     "isFinished": true,
     "memberCountStart": 3,
     "ownerId": 1958826421
+  },
+  {
+    "id": "122e6ea2-550c-4a22-9ded-84673db78b19",
+    "channelId": -1002476488937,
+    "channelName": "@broke2bit",
+    "additionalChannels": [],
+    "title": "sdsdfsdf",
+    "description": "sdfsdfsdf",
+    "messageId": 347,
+    "startAt": 1745253283553,
+    "endTime": 1745253339955,
+    "participants": [
+      1958826421
+    ],
+    "winners": [
+      1958826421
+    ],
+    "winnerCount": 1,
+    "isFinished": true,
+    "memberCountStart": 3,
+    "ownerId": 1958826421
   }
 ]
